@@ -1,0 +1,2 @@
+-- Datos de referencia para `supabase db reset` en desarrollo local.
+-- Vacío por ahora: el MVP no requiere datos semilla.
