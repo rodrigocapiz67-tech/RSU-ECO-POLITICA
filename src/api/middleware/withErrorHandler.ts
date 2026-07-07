@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { logger } from '../../infrastructure/logging/Logger';
 
 /**
  * Tipo para los manejadores de rutas (Route Handlers) en Next.js
@@ -19,7 +20,10 @@ export function withErrorHandler(handler: ApiHandler): ApiHandler {
       
     } catch (error: any) {
       // 1. Loggear el error detallado internamente (servidor)
-      console.error(`❌ [API Error] ${req.method} ${req.nextUrl.pathname}:`, error);
+      logger.error('Unhandled API error', error, {
+        method: req.method,
+        path: req.nextUrl.pathname,
+      });
 
       // 2. Manejar Errores de Validación (Zod) que hayan escapado
       if (error instanceof ZodError) {

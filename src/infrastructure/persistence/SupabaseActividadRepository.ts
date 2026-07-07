@@ -1,6 +1,7 @@
 import { IActividadRepository } from '../../domain/interfaces/IActividadRepository';
 import { Actividad } from '../../domain/entities/Actividad';
 import { Result } from '../../domain/common/Result';
+import { PaginatedResult, PaginationParams, toPaginatedResult } from '../../domain/common/Pagination';
 import { CreateSupabaseServerClient } from '../supabase/SupabaseServerClient';
 import { CreateSupabaseAnonClient } from '../supabase/SupabaseAnonClient';
 import { unstable_cache, revalidateTag } from 'next/cache';
@@ -77,22 +78,27 @@ export class SupabaseActividadRepository implements IActividadRepository {
     }
   }
 
-  async GetProximas(): Promise<Result<Actividad[]>> {
+  async GetProximas(pagination: PaginationParams): Promise<Result<PaginatedResult<Actividad>>> {
     const client = await CreateSupabaseServerClient();
-    const { data, error } = await client
+    const from = (pagination.page - 1) * pagination.pageSize;
+    const to = from + pagination.pageSize - 1;
+
+    const { data, error, count } = await client
       .from(this.table)
-      .select('*')
+      .select('*', { count: 'exact' })
       .gte('fecha', new Date().toISOString())
       .is('deleted_at', null)
-      .order('fecha', { ascending: true });
+      .order('fecha', { ascending: true })
+      .range(from, to);
 
     if (error) {
-      return Result.Failure<Actividad[]>(
+      return Result.Failure<PaginatedResult<Actividad>>(
         `Error al listar próximas actividades: ${error.message}`,
       );
     }
 
-    return Result.Success((data as ActividadRow[]).map((row) => this.MapToEntity(row)));
+    const items = (data as ActividadRow[]).map((row) => this.MapToEntity(row));
+    return Result.Success(toPaginatedResult(items, count ?? items.length, pagination));
   }
 
   async Create(actividad: Actividad): Promise<Result<Actividad>> {
@@ -116,7 +122,8 @@ export class SupabaseActividadRepository implements IActividadRepository {
     }
 
     // Purgar la caché para que el próximo GetAll() traiga los datos frescos
-    revalidateTag('actividades');
+    // (el profile debe matchear el `revalidate: 3600` usado en el unstable_cache de arriba).
+    revalidateTag('actividades', { expire: 3600 });
 
     return Result.Success(this.MapToEntity(data as ActividadRow));
   }

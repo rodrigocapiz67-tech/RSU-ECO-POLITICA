@@ -12,11 +12,11 @@ export const CreateReporteSchema = z.object({
     .max(1000, 'La descripción es demasiado larga'),
   
   categoria: z.enum(['residuos', 'agua', 'energia', 'ruido', 'area_verde', 'movilidad', 'otro'], {
-    errorMap: () => ({ message: 'La categoría seleccionada no es válida' })
+    message: 'La categoría seleccionada no es válida',
   }),
-  
+
   prioridad: z.enum(['baja', 'media', 'alta', 'critica'], {
-    errorMap: () => ({ message: 'Prioridad inválida' })
+    message: 'Prioridad inválida',
   }).optional(),
   
   ubicacion: z.string().min(3, 'Debes especificar una ubicación válida'),

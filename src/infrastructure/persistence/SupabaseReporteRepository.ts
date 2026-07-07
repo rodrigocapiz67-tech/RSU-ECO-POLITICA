@@ -4,6 +4,7 @@ import { CategoriaReporte } from '../../domain/enums/CategoriaReporte';
 import { PrioridadReporte } from '../../domain/enums/PrioridadReporte';
 import { EstadoReporte } from '../../domain/enums/EstadoReporte';
 import { Result } from '../../domain/common/Result';
+import { PaginatedResult, PaginationParams, toPaginatedResult } from '../../domain/common/Pagination';
 import { CreateSupabaseServerClient } from '../supabase/SupabaseServerClient';
 
 interface ReporteRow {
@@ -58,19 +59,24 @@ export class SupabaseReporteRepository implements IReporteRepository {
     return Result.Success(this.MapToEntity(data as ReporteRow));
   }
 
-  async GetAll(): Promise<Result<Reporte[]>> {
+  async GetAll(pagination: PaginationParams): Promise<Result<PaginatedResult<Reporte>>> {
     const client = await CreateSupabaseServerClient();
-    const { data, error } = await client
+    const from = (pagination.page - 1) * pagination.pageSize;
+    const to = from + pagination.pageSize - 1;
+
+    const { data, error, count } = await client
       .from(this.table)
-      .select('*')
+      .select('*', { count: 'exact' })
       .is('deleted_at', null)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
     if (error) {
-      return Result.Failure<Reporte[]>(`Error al listar reportes: ${error.message}`);
+      return Result.Failure<PaginatedResult<Reporte>>(`Error al listar reportes: ${error.message}`);
     }
 
-    return Result.Success((data as ReporteRow[]).map((row) => this.MapToEntity(row)));
+    const items = (data as ReporteRow[]).map((row) => this.MapToEntity(row));
+    return Result.Success(toPaginatedResult(items, count ?? items.length, pagination));
   }
 
   async GetByAutor(autorId: string): Promise<Result<Reporte[]>> {

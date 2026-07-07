@@ -5,11 +5,15 @@ import { CreateActividadHandler } from '../../../application/actividades/command
 import { CreateActividadCommand } from '../../../application/actividades/commands/CreateActividadCommand';
 import { GetActividadesHandler } from '../../../application/actividades/queries/GetActividadesHandler';
 import { withErrorHandler } from '../../../api/middleware/withErrorHandler';
+import { CreateActividadSchema } from '../../../api/validations/ActividadSchema';
 
-export const GET = withErrorHandler(async () => {
+export const GET = withErrorHandler(async (request: NextRequest) => {
+  const page = Number(request.nextUrl.searchParams.get('page'));
+  const pageSize = Number(request.nextUrl.searchParams.get('pageSize'));
+
   const sp = GetServiceProvider();
   const handler = new GetActividadesHandler(sp.actividadRepository);
-  const result = await handler.Handle();
+  const result = await handler.Handle({ page, pageSize });
 
   if (result.isFailure) {
     return NextResponse.json({ success: false, error: result.error }, { status: 400 });
@@ -33,19 +37,22 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   const body = await request.json();
 
-  if (!body.titulo || !body.fecha) {
+  const parseResult = CreateActividadSchema.safeParse(body);
+  if (!parseResult.success) {
     return NextResponse.json(
-      { success: false, error: 'titulo y fecha son obligatorios' },
+      { success: false, error: 'Datos inválidos', detalles: parseResult.error.format() },
       { status: 400 },
     );
   }
 
+  const validData = parseResult.data;
+
   const command: CreateActividadCommand = {
-    titulo: body.titulo,
-    descripcion: body.descripcion ?? '',
-    fecha: body.fecha,
-    ubicacion: body.ubicacion ?? '',
-    cupoMaximo: body.cupoMaximo ?? 30,
+    titulo: validData.titulo,
+    descripcion: validData.descripcion,
+    fecha: validData.fecha,
+    ubicacion: validData.ubicacion,
+    cupoMaximo: validData.cupoMaximo,
     organizadorId: user.id,
   };
 

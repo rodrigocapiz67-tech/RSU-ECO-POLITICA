@@ -1,13 +1,15 @@
 import { IReporteRepository } from '../../../domain/interfaces/IReporteRepository';
 import { Reporte } from '../../../domain/entities/Reporte';
 import { Result } from '../../../domain/common/Result';
-import { GetReporteByIdQuery, GetReportesByAutorQuery } from './GetReportesQuery';
+import { PaginatedResult, normalizePagination } from '../../../domain/common/Pagination';
+import { GetReporteByIdQuery, GetReportesByAutorQuery, GetReportesQuery } from './GetReportesQuery';
 
 export class GetReportesHandler {
   constructor(private readonly reporteRepository: IReporteRepository) {}
 
-  async Handle(): Promise<Result<Reporte[]>> {
-    return this.reporteRepository.GetAll();
+  async Handle(query: GetReportesQuery = {}): Promise<Result<PaginatedResult<Reporte>>> {
+    const pagination = normalizePagination(query.page, query.pageSize);
+    return this.reporteRepository.GetAll(pagination);
   }
 }
 

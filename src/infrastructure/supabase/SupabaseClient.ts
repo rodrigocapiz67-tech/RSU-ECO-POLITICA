@@ -3,10 +3,14 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 let serviceClientInstance: SupabaseClient | null = null;
 
 /**
- * Cliente Supabase con la service-role key: solo se invoca desde código
- * server-side (repositorios, route handlers). Salta RLS, por eso la
- * autorización (rol/dueño del recurso) se valida antes en la capa de
- * aplicación (ver `GetCurrentUser` + checks en cada route handler).
+ * Cliente Supabase con la service-role key: salta RLS por completo.
+ * NO USADO ACTUALMENTE por los repositorios (ver `SupabaseServerClient.ts`,
+ * que usan el cliente atado a cookies del usuario y por lo tanto SÍ respeta
+ * RLS). Este cliente queda disponible para tareas server-side que
+ * deliberadamente necesiten saltarse RLS (jobs, migraciones de datos, admin
+ * tooling); si lo usas en una API route, la autorización deja de depender
+ * de las políticas RLS y pasa a ser responsabilidad exclusiva del código
+ * que la invoque.
  */
 export function CreateServerSupabaseClient(): SupabaseClient {
   if (!serviceClientInstance) {

@@ -6,11 +6,15 @@ import { CreateReporteCommand } from '../../../application/reportes/commands/Cre
 import { GetReportesHandler } from '../../../application/reportes/queries/GetReportesHandler';
 import { CreateReporteSchema } from '../../../api/validations/ReporteSchema';
 import { withErrorHandler } from '../../../api/middleware/withErrorHandler';
+import { withRateLimit } from '../../../api/middleware/withRateLimit';
 
 export const GET = withErrorHandler(async (request: NextRequest) => {
+  const page = Number(request.nextUrl.searchParams.get('page'));
+  const pageSize = Number(request.nextUrl.searchParams.get('pageSize'));
+
   const sp = GetServiceProvider();
   const handler = new GetReportesHandler(sp.reporteRepository);
-  const result = await handler.Handle();
+  const result = await handler.Handle({ page, pageSize });
 
   if (result.isFailure) {
     return NextResponse.json({ success: false, error: result.error }, { status: 400 });
@@ -19,7 +23,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   return NextResponse.json({ success: true, data: result.value });
 });
 
-export const POST = withErrorHandler(async (request: NextRequest) => {
+export const POST = withErrorHandler(withRateLimit(async (request: NextRequest) => {
   const body = await request.json();
 
   const parseResult = CreateReporteSchema.safeParse(body);
@@ -62,4 +66,4 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }
 
   return NextResponse.json({ success: true, data: result.value }, { status: 201 });
-});
+}, { limit: 5, windowMs: 10 * 60 * 1000 }));

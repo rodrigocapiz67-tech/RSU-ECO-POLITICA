@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GetServiceProvider } from '../../../../../infrastructure/DependencyInjection';
 import { GetCurrentUser } from '../../../../../infrastructure/auth/GetCurrentUser';
 import { InscribirUsuarioHandler } from '../../../../../application/actividades/commands/InscribirUsuarioHandler';
+import { withRateLimit } from '../../../../../api/middleware/withRateLimit';
 
 interface Params {
   params: Promise<{ id: string }>;
 }
 
-export async function POST(_request: NextRequest, { params }: Params) {
+async function HandlePost(_request: NextRequest, { params }: Params) {
   const { id } = await params;
 
   const user = await GetCurrentUser();
@@ -30,3 +31,5 @@ export async function POST(_request: NextRequest, { params }: Params) {
 
   return NextResponse.json(result.value, { status: 201 });
 }
+
+export const POST = withRateLimit(HandlePost, { limit: 10, windowMs: 10 * 60 * 1000 });

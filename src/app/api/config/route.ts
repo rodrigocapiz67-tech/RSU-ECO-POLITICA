@@ -4,6 +4,7 @@ import { GetCurrentUser } from '../../../infrastructure/auth/GetCurrentUser';
 import { CreateConfigHandler } from '../../../application/config/commands/CreateConfigHandler';
 import { CreateConfigCommand } from '../../../application/config/commands/CreateConfigCommand';
 import { withErrorHandler } from '../../../api/middleware/withErrorHandler';
+import { CreateConfigSchema } from '../../../api/validations/ConfigSchema';
 
 export const GET = withErrorHandler(async () => {
   const sp = GetServiceProvider();
@@ -26,18 +27,21 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     );
   }
 
-  const body: CreateConfigCommand = await request.json();
+  const body = await request.json();
 
-  if (!body.key || !body.value) {
+  const parseResult = CreateConfigSchema.safeParse(body);
+  if (!parseResult.success) {
     return NextResponse.json(
-      { success: false, error: 'key and value are required' },
+      { success: false, error: 'Datos inválidos', detalles: parseResult.error.format() },
       { status: 400 },
     );
   }
 
+  const command: CreateConfigCommand = parseResult.data;
+
   const sp = GetServiceProvider();
   const handler = new CreateConfigHandler(sp.configRepository);
-  const result = await handler.Handle(body);
+  const result = await handler.Handle(command);
 
   if (result.isFailure) {
     const status = result.error?.includes('already exists') ? 409 : 400;
