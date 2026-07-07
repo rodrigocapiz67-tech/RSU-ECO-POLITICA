@@ -36,16 +36,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }
 
   const body = await request.json();
-
-  const parseResult = CreateActividadSchema.safeParse(body);
-  if (!parseResult.success) {
-    return NextResponse.json(
-      { success: false, error: 'Datos inválidos', detalles: parseResult.error.format() },
-      { status: 400 },
-    );
-  }
-
-  const validData = parseResult.data;
+  const validData = CreateActividadSchema.parse(body);
 
   const command: CreateActividadCommand = {
     titulo: validData.titulo,

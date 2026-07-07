@@ -6,9 +6,19 @@ interface LogFields {
 
 function serializeError(error: unknown): LogFields {
   if (error instanceof Error) {
-    return { errorMessage: error.message, errorName: error.name, stack: error.stack };
+    // Incluye propiedades propias extra (p.ej. `.status`/`.code` en errores custom) además de message/stack.
+    const ownProps = Object.fromEntries(
+      Object.entries(error).filter(([key]) => key !== 'message' && key !== 'stack'),
+    );
+    return { errorMessage: error.message, errorName: error.name, stack: error.stack, ...ownProps };
   }
-  return { errorMessage: String(error) };
+
+  try {
+    return { errorMessage: JSON.stringify(error) };
+  } catch {
+    // Referencias circulares u otros valores no serializables.
+    return { errorMessage: String(error) };
+  }
 }
 
 function write(level: LogLevel, message: string, fields?: LogFields): void {

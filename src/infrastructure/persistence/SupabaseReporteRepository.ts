@@ -5,6 +5,7 @@ import { PrioridadReporte } from '../../domain/enums/PrioridadReporte';
 import { EstadoReporte } from '../../domain/enums/EstadoReporte';
 import { Result } from '../../domain/common/Result';
 import { PaginatedResult, PaginationParams, toPaginatedResult } from '../../domain/common/Pagination';
+import { RANGE_NOT_SATISFIABLE_CODE, toRange } from './PaginationHelpers';
 import { CreateSupabaseServerClient } from '../supabase/SupabaseServerClient';
 
 interface ReporteRow {
@@ -61,17 +62,25 @@ export class SupabaseReporteRepository implements IReporteRepository {
 
   async GetAll(pagination: PaginationParams): Promise<Result<PaginatedResult<Reporte>>> {
     const client = await CreateSupabaseServerClient();
-    const from = (pagination.page - 1) * pagination.pageSize;
-    const to = from + pagination.pageSize - 1;
+    const { from, to } = toRange(pagination);
 
     const { data, error, count } = await client
       .from(this.table)
-      .select('*', { count: 'exact' })
+      .select('*', { count: 'estimated' })
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .range(from, to);
 
     if (error) {
+      // Página pedida más allá del total de filas: es una página vacía, no un error.
+      if (error.code === RANGE_NOT_SATISFIABLE_CODE) {
+        const { count: total } = await client
+          .from(this.table)
+          .select('*', { count: 'estimated', head: true })
+          .is('deleted_at', null);
+        return Result.Success(toPaginatedResult<Reporte>([], total ?? 0, pagination));
+      }
+
       return Result.Failure<PaginatedResult<Reporte>>(`Error al listar reportes: ${error.message}`);
     }
 

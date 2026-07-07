@@ -28,16 +28,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }
 
   const body = await request.json();
-
-  const parseResult = CreateConfigSchema.safeParse(body);
-  if (!parseResult.success) {
-    return NextResponse.json(
-      { success: false, error: 'Datos inválidos', detalles: parseResult.error.format() },
-      { status: 400 },
-    );
-  }
-
-  const command: CreateConfigCommand = parseResult.data;
+  const command: CreateConfigCommand = CreateConfigSchema.parse(body);
 
   const sp = GetServiceProvider();
   const handler = new CreateConfigHandler(sp.configRepository);

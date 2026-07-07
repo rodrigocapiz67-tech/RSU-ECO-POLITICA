@@ -25,16 +25,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
 
 export const POST = withErrorHandler(withRateLimit(async (request: NextRequest) => {
   const body = await request.json();
-
-  const parseResult = CreateReporteSchema.safeParse(body);
-  if (!parseResult.success) {
-    return NextResponse.json(
-      { success: false, error: 'Datos inválidos', detalles: parseResult.error.format() },
-      { status: 400 },
-    );
-  }
-
-  const validData = parseResult.data;
+  const validData = CreateReporteSchema.parse(body);
   const esAnonimo = validData.esAnonimo;
 
   // Reporte identificado ⇒ requiere sesión. Reporte anónimo ⇒ sin autor.

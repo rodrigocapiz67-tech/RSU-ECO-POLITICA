@@ -20,7 +20,6 @@ function makeCommand(overrides: Partial<CreateActividadCommand> = {}): CreateAct
 function makeRepository(): IActividadRepository {
   return {
     GetById: vi.fn(),
-    GetAll: vi.fn(),
     GetProximas: vi.fn(),
     Create: vi.fn(async (actividad: Actividad) => Result.Success(actividad)),
   };

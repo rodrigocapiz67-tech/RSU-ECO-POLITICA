@@ -2,9 +2,8 @@ import { IActividadRepository } from '../../domain/interfaces/IActividadReposito
 import { Actividad } from '../../domain/entities/Actividad';
 import { Result } from '../../domain/common/Result';
 import { PaginatedResult, PaginationParams, toPaginatedResult } from '../../domain/common/Pagination';
+import { RANGE_NOT_SATISFIABLE_CODE, toRange } from './PaginationHelpers';
 import { CreateSupabaseServerClient } from '../supabase/SupabaseServerClient';
-import { CreateSupabaseAnonClient } from '../supabase/SupabaseAnonClient';
-import { unstable_cache, revalidateTag } from 'next/cache';
 
 interface ActividadRow {
   id: string;
@@ -52,46 +51,29 @@ export class SupabaseActividadRepository implements IActividadRepository {
     return Result.Success(this.MapToEntity(data as ActividadRow));
   }
 
-  async GetAll(): Promise<Result<Actividad[]>> {
-    // Definimos la función cacheada globalmente
-    const getCachedActividades = unstable_cache(
-      async () => {
-        const client = CreateSupabaseAnonClient();
-        const { data, error } = await client
-          .from(this.table)
-          .select('*')
-          .is('deleted_at', null)
-          .order('fecha', { ascending: true });
-        
-        if (error) throw new Error(error.message);
-        return data as ActividadRow[];
-      },
-      ['actividades_all'],
-      { tags: ['actividades'], revalidate: 3600 } // Cachear por 1 hora o hasta que se revalide
-    );
-
-    try {
-      const data = await getCachedActividades();
-      return Result.Success(data.map((row) => this.MapToEntity(row)));
-    } catch (error: any) {
-      return Result.Failure<Actividad[]>(`Error al listar actividades: ${error.message}`);
-    }
-  }
-
   async GetProximas(pagination: PaginationParams): Promise<Result<PaginatedResult<Actividad>>> {
     const client = await CreateSupabaseServerClient();
-    const from = (pagination.page - 1) * pagination.pageSize;
-    const to = from + pagination.pageSize - 1;
+    const { from, to } = toRange(pagination);
 
     const { data, error, count } = await client
       .from(this.table)
-      .select('*', { count: 'exact' })
+      .select('*', { count: 'estimated' })
       .gte('fecha', new Date().toISOString())
       .is('deleted_at', null)
       .order('fecha', { ascending: true })
       .range(from, to);
 
     if (error) {
+      // Página pedida más allá del total de filas: es una página vacía, no un error.
+      if (error.code === RANGE_NOT_SATISFIABLE_CODE) {
+        const { count: total } = await client
+          .from(this.table)
+          .select('*', { count: 'estimated', head: true })
+          .gte('fecha', new Date().toISOString())
+          .is('deleted_at', null);
+        return Result.Success(toPaginatedResult<Actividad>([], total ?? 0, pagination));
+      }
+
       return Result.Failure<PaginatedResult<Actividad>>(
         `Error al listar próximas actividades: ${error.message}`,
       );
@@ -120,10 +102,6 @@ export class SupabaseActividadRepository implements IActividadRepository {
     if (error) {
       return Result.Failure<Actividad>(`Error al crear actividad: ${error.message}`);
     }
-
-    // Purgar la caché para que el próximo GetAll() traiga los datos frescos
-    // (el profile debe matchear el `revalidate: 3600` usado en el unstable_cache de arriba).
-    revalidateTag('actividades', { expire: 3600 });
 
     return Result.Success(this.MapToEntity(data as ActividadRow));
   }

@@ -25,7 +25,20 @@ export function withErrorHandler(handler: ApiHandler): ApiHandler {
         path: req.nextUrl.pathname,
       });
 
-      // 2. Manejar Errores de Validación (Zod) que hayan escapado
+      // 2. Body JSON malformado (request.json() lanza SyntaxError): es un error de input del cliente, no del servidor.
+      if (error instanceof SyntaxError) {
+        return NextResponse.json(
+          {
+            success: false,
+            status: 400,
+            message: 'El cuerpo de la petición no es JSON válido',
+            errorCode: 'INVALID_JSON',
+          },
+          { status: 400 }
+        );
+      }
+
+      // 3. Manejar Errores de Validación (Zod) que hayan escapado
       if (error instanceof ZodError) {
         return NextResponse.json(
           {
@@ -39,7 +52,7 @@ export function withErrorHandler(handler: ApiHandler): ApiHandler {
         );
       }
 
-      // 3. Manejar Errores Genéricos / Caídas de Base de Datos
+      // 4. Manejar Errores Genéricos / Caídas de Base de Datos
       const statusCode = error.status || 500;
       const isInternal = statusCode === 500;
 

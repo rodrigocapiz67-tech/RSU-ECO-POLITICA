@@ -3,6 +3,7 @@ import { GetServiceProvider } from '../../../../../infrastructure/DependencyInje
 import { GetCurrentUser } from '../../../../../infrastructure/auth/GetCurrentUser';
 import { InscribirUsuarioHandler } from '../../../../../application/actividades/commands/InscribirUsuarioHandler';
 import { withRateLimit } from '../../../../../api/middleware/withRateLimit';
+import { withErrorHandler } from '../../../../../api/middleware/withErrorHandler';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -32,4 +33,4 @@ async function HandlePost(_request: NextRequest, { params }: Params) {
   return NextResponse.json(result.value, { status: 201 });
 }
 
-export const POST = withRateLimit(HandlePost, { limit: 10, windowMs: 10 * 60 * 1000 });
+export const POST = withErrorHandler(withRateLimit(HandlePost, { limit: 10, windowMs: 10 * 60 * 1000 }));

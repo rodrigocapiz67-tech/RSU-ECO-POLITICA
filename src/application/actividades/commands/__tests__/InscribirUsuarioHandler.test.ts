@@ -26,7 +26,6 @@ function makeActividadRepository(actividad: Actividad | null): IActividadReposit
     GetById: vi.fn(async () =>
       actividad ? Result.Success(actividad) : Result.Failure<Actividad>('Actividad no encontrada'),
     ),
-    GetAll: vi.fn(),
     GetProximas: vi.fn(),
     Create: vi.fn(),
   };

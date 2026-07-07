@@ -10,8 +10,7 @@ export const CreateActividadSchema = z.object({
     .optional()
     .default(''),
 
-  fecha: z.string()
-    .refine((value) => !Number.isNaN(new Date(value).getTime()), 'La fecha no es válida'),
+  fecha: z.iso.datetime({ message: 'La fecha debe ser un ISO 8601 válido (ej. 2026-08-01T10:00:00.000Z)' }),
 
   ubicacion: z.string()
     .max(200, 'La ubicación es demasiado larga')
