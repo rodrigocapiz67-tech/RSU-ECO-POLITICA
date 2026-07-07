@@ -1,0 +1,24 @@
+-- ============================================================
+-- Migración: defensa adicional contra escalado de privilegios
+--
+-- El trigger `prevent_rol_privilege_escalation` (corregido en la
+-- migración anterior) depende de que `current_user` refleje
+-- correctamente al invocador real, algo sutil bajo SECURITY
+-- DEFINER/INVOKER y que ya se rompió una vez por ese motivo. Como
+-- capa adicional, más simple y nativa de Postgres, se revoca el
+-- privilegio de UPDATE sobre las columnas `rol` y `estado_brigadista`
+-- para los roles `authenticated`/`anon`. Esto bloquea cualquier
+-- intento de tocar esas columnas a nivel de privilegios —capa que
+-- corre antes que triggers o RLS— sin depender de la semántica de
+-- `current_user` dentro de una función.
+--
+-- PostgREST solo genera `UPDATE ... SET <columnas presentes en el
+-- body>`, así que un `update({ nombre: 'x' })` normal (que no toca
+-- rol/estado_brigadista) sigue funcionando sin cambios.
+--
+-- `inscribir_brigadista` sigue funcionando: es SECURITY DEFINER y
+-- corre como su dueño (postgres), rol que no pierde privilegios con
+-- este REVOKE (solo aplica a authenticated/anon).
+-- ============================================================
+
+revoke update (rol, estado_brigadista) on public.profiles from authenticated, anon;

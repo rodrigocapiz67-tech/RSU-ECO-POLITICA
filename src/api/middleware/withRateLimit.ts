@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-type ApiHandler = (req: NextRequest, context: any) => Promise<NextResponse> | NextResponse;
+import type { ApiHandler } from './withErrorHandler';
 
 interface RateLimitOptions {
   /** Máximo de requests permitidos dentro de la ventana. */
@@ -28,30 +27,13 @@ interface Bucket {
  */
 const buckets = new Map<string, Bucket>();
 
-/** Cota dura de memoria: si se alcanza, se descartan primero los buckets más antiguos (Map preserva orden de inserción). */
+/** Cota dura de memoria: Map preserva orden de inserción, así que el primer key es siempre el más antiguo. */
 const MAX_BUCKETS = 5_000;
 
 function getClientKey(req: NextRequest): string {
   const forwardedFor = req.headers.get('x-forwarded-for');
   if (forwardedFor) return forwardedFor.split(',')[0].trim();
   return req.headers.get('x-real-ip') ?? 'unknown';
-}
-
-// Barrido completo del Map: costoso (O(n)), así que solo corre cuando ya
-// estamos cerca de la cota dura, no en cada request.
-function pruneExpired(now: number): void {
-  if (buckets.size < MAX_BUCKETS * 0.8) return;
-  for (const [key, bucket] of buckets) {
-    if (bucket.resetAt <= now) buckets.delete(key);
-  }
-}
-
-// Backstop O(1): garantiza memoria acotada incluso si pruneExpired no liberó
-// suficiente (p. ej. bajo spoofing de x-forwarded-for con ventanas largas).
-function enforceMaxSize(): void {
-  if (buckets.size < MAX_BUCKETS) return;
-  const oldestKey = buckets.keys().next().value;
-  if (oldestKey !== undefined) buckets.delete(oldestKey);
 }
 
 /**
@@ -61,13 +43,19 @@ function enforceMaxSize(): void {
 export function withRateLimit(handler: ApiHandler, options: RateLimitOptions): ApiHandler {
   return async (req: NextRequest, context: any) => {
     const now = Date.now();
-    pruneExpired(now);
-
     const key = `${req.nextUrl.pathname}:${getClientKey(req)}`;
     const bucket = buckets.get(key);
 
     if (!bucket || bucket.resetAt <= now) {
-      enforceMaxSize();
+      // `delete` antes de re-chequear el tamaño: si `key` ya existía (ventana
+      // expirada), no cuenta como crecimiento del Map y no evictamos a nadie
+      // ajeno. Solo se evict el bucket más antiguo cuando insertar esta key
+      // realmente haría crecer el Map más allá de la cota.
+      buckets.delete(key);
+      if (buckets.size >= MAX_BUCKETS) {
+        const oldestKey = buckets.keys().next().value;
+        if (oldestKey !== undefined) buckets.delete(oldestKey);
+      }
       buckets.set(key, { count: 1, resetAt: now + options.windowMs });
     } else {
       bucket.count += 1;

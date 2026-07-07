@@ -5,15 +5,14 @@ import { CreateActividadHandler } from '../../../application/actividades/command
 import { CreateActividadCommand } from '../../../application/actividades/commands/CreateActividadCommand';
 import { GetActividadesHandler } from '../../../application/actividades/queries/GetActividadesHandler';
 import { withErrorHandler } from '../../../api/middleware/withErrorHandler';
+import { withRateLimit } from '../../../api/middleware/withRateLimit';
 import { CreateActividadSchema } from '../../../api/validations/ActividadSchema';
+import { parsePaginationParams } from '../../../api/parsePaginationParams';
 
 export const GET = withErrorHandler(async (request: NextRequest) => {
-  const page = Number(request.nextUrl.searchParams.get('page'));
-  const pageSize = Number(request.nextUrl.searchParams.get('pageSize'));
-
   const sp = GetServiceProvider();
   const handler = new GetActividadesHandler(sp.actividadRepository);
-  const result = await handler.Handle({ page, pageSize });
+  const result = await handler.Handle(parsePaginationParams(request));
 
   if (result.isFailure) {
     return NextResponse.json({ success: false, error: result.error }, { status: 400 });
@@ -22,7 +21,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   return NextResponse.json({ success: true, data: result.value });
 });
 
-export const POST = withErrorHandler(async (request: NextRequest) => {
+export const POST = withErrorHandler(withRateLimit(async (request: NextRequest) => {
   // Solo coordinadores/admin pueden crear actividades.
   const user = await GetCurrentUser();
   if (!user) {
@@ -56,4 +55,4 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }
 
   return NextResponse.json({ success: true, data: result.value }, { status: 201 });
-});
+}, { limit: 20, windowMs: 10 * 60 * 1000 }));

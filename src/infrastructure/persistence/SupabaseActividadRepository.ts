@@ -1,8 +1,8 @@
 import { IActividadRepository } from '../../domain/interfaces/IActividadRepository';
 import { Actividad } from '../../domain/entities/Actividad';
 import { Result } from '../../domain/common/Result';
-import { PaginatedResult, PaginationParams, toPaginatedResult } from '../../domain/common/Pagination';
-import { RANGE_NOT_SATISFIABLE_CODE, toRange } from './PaginationHelpers';
+import { PaginatedResult, PaginationParams, toPaginatedResult, toRange } from '../../domain/common/Pagination';
+import { RANGE_NOT_SATISFIABLE_CODE } from './PaginationHelpers';
 import { CreateSupabaseServerClient } from '../supabase/SupabaseServerClient';
 
 interface ActividadRow {
@@ -57,7 +57,7 @@ export class SupabaseActividadRepository implements IActividadRepository {
 
     const { data, error, count } = await client
       .from(this.table)
-      .select('*', { count: 'estimated' })
+      .select('*', { count: 'exact' })
       .gte('fecha', new Date().toISOString())
       .is('deleted_at', null)
       .order('fecha', { ascending: true })
@@ -66,12 +66,19 @@ export class SupabaseActividadRepository implements IActividadRepository {
     if (error) {
       // Página pedida más allá del total de filas: es una página vacía, no un error.
       if (error.code === RANGE_NOT_SATISFIABLE_CODE) {
-        const { count: total } = await client
+        const countResult = await client
           .from(this.table)
-          .select('*', { count: 'estimated', head: true })
+          .select('*', { count: 'exact', head: true })
           .gte('fecha', new Date().toISOString())
           .is('deleted_at', null);
-        return Result.Success(toPaginatedResult<Actividad>([], total ?? 0, pagination));
+
+        if (countResult.error) {
+          return Result.Failure<PaginatedResult<Actividad>>(
+            `Error al listar próximas actividades: ${countResult.error.message}`,
+          );
+        }
+
+        return Result.Success(toPaginatedResult<Actividad>([], countResult.count ?? 0, pagination));
       }
 
       return Result.Failure<PaginatedResult<Actividad>>(

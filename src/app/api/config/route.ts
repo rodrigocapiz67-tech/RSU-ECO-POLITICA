@@ -4,6 +4,7 @@ import { GetCurrentUser } from '../../../infrastructure/auth/GetCurrentUser';
 import { CreateConfigHandler } from '../../../application/config/commands/CreateConfigHandler';
 import { CreateConfigCommand } from '../../../application/config/commands/CreateConfigCommand';
 import { withErrorHandler } from '../../../api/middleware/withErrorHandler';
+import { withRateLimit } from '../../../api/middleware/withRateLimit';
 import { CreateConfigSchema } from '../../../api/validations/ConfigSchema';
 
 export const GET = withErrorHandler(async () => {
@@ -17,7 +18,7 @@ export const GET = withErrorHandler(async () => {
   return NextResponse.json({ success: true, data: result.value });
 });
 
-export const POST = withErrorHandler(async (request: NextRequest) => {
+export const POST = withErrorHandler(withRateLimit(async (request: NextRequest) => {
   // Solo admin puede crear configuración del sistema.
   const user = await GetCurrentUser();
   if (!user || user.rol !== 'admin') {
@@ -40,4 +41,4 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }
 
   return NextResponse.json({ success: true, data: result.value }, { status: 201 });
-});
+}, { limit: 20, windowMs: 10 * 60 * 1000 }));

@@ -7,14 +7,12 @@ import { GetReportesHandler } from '../../../application/reportes/queries/GetRep
 import { CreateReporteSchema } from '../../../api/validations/ReporteSchema';
 import { withErrorHandler } from '../../../api/middleware/withErrorHandler';
 import { withRateLimit } from '../../../api/middleware/withRateLimit';
+import { parsePaginationParams } from '../../../api/parsePaginationParams';
 
 export const GET = withErrorHandler(async (request: NextRequest) => {
-  const page = Number(request.nextUrl.searchParams.get('page'));
-  const pageSize = Number(request.nextUrl.searchParams.get('pageSize'));
-
   const sp = GetServiceProvider();
   const handler = new GetReportesHandler(sp.reporteRepository);
-  const result = await handler.Handle({ page, pageSize });
+  const result = await handler.Handle(parsePaginationParams(request));
 
   if (result.isFailure) {
     return NextResponse.json({ success: false, error: result.error }, { status: 400 });

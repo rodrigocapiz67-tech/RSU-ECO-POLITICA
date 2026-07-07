@@ -38,3 +38,9 @@ export function toPaginatedResult<T>(
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
   };
 }
+
+export function toRange({ page, pageSize }: PaginationParams): { from: number; to: number } {
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  return { from, to };
+}
