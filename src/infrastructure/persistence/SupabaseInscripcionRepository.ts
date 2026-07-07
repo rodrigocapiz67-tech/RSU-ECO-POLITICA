@@ -1,7 +1,7 @@
 import { IInscripcionRepository } from '../../domain/interfaces/IInscripcionRepository';
 import { Inscripcion } from '../../domain/entities/Inscripcion';
 import { Result } from '../../domain/common/Result';
-import { CreateServerSupabaseClient } from '../supabase/SupabaseClient';
+import { CreateSupabaseServerClient } from '../supabase/SupabaseServerClient';
 
 interface InscripcionRow {
   id: string;
@@ -25,7 +25,7 @@ export class SupabaseInscripcionRepository implements IInscripcionRepository {
   }
 
   async Create(inscripcion: Inscripcion): Promise<Result<Inscripcion>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .insert({
@@ -44,8 +44,11 @@ export class SupabaseInscripcionRepository implements IInscripcionRepository {
   }
 
   async Delete(id: string): Promise<Result<void>> {
-    const client = CreateServerSupabaseClient();
-    const { error } = await client.from(this.table).delete().eq('id', id);
+    const client = await CreateSupabaseServerClient();
+    const { error } = await client
+      .from(this.table)
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
 
     if (error) {
       return Result.Failure<void>(`Error al cancelar inscripción: ${error.message}`);
@@ -58,12 +61,13 @@ export class SupabaseInscripcionRepository implements IInscripcionRepository {
     actividadId: string,
     usuarioId: string,
   ): Promise<Result<boolean>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .select('id')
       .eq('actividad_id', actividadId)
       .eq('usuario_id', usuarioId)
+      .is('deleted_at', null)
       .maybeSingle();
 
     if (error) {
@@ -74,11 +78,12 @@ export class SupabaseInscripcionRepository implements IInscripcionRepository {
   }
 
   async ContarPorActividad(actividadId: string): Promise<Result<number>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { count, error } = await client
       .from(this.table)
       .select('*', { count: 'exact', head: true })
-      .eq('actividad_id', actividadId);
+      .eq('actividad_id', actividadId)
+      .is('deleted_at', null);
 
     if (error) {
       return Result.Failure<number>(`Error al contar inscripciones: ${error.message}`);
@@ -88,11 +93,12 @@ export class SupabaseInscripcionRepository implements IInscripcionRepository {
   }
 
   async GetByUsuario(usuarioId: string): Promise<Result<Inscripcion[]>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .select('*')
       .eq('usuario_id', usuarioId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {

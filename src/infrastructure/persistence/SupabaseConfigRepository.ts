@@ -2,7 +2,7 @@ import { IConfigRepository } from '../../domain/interfaces/IConfigRepository';
 import { Config } from '../../domain/entities/Config';
 import { ConfigScope } from '../../domain/enums/ConfigScope';
 import { Result } from '../../domain/common/Result';
-import { CreateServerSupabaseClient } from '../supabase/SupabaseClient';
+import { CreateSupabaseServerClient } from '../supabase/SupabaseServerClient';
 
 interface ConfigRow {
   id: string;
@@ -30,7 +30,7 @@ export class SupabaseConfigRepository implements IConfigRepository {
   }
 
   async GetById(id: string): Promise<Result<Config>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .select('*')
@@ -45,7 +45,7 @@ export class SupabaseConfigRepository implements IConfigRepository {
   }
 
   async GetByKey(key: string): Promise<Result<Config>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .select('*')
@@ -60,10 +60,11 @@ export class SupabaseConfigRepository implements IConfigRepository {
   }
 
   async GetAll(): Promise<Result<Config[]>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .select('*')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -74,7 +75,7 @@ export class SupabaseConfigRepository implements IConfigRepository {
   }
 
   async Create(config: Config): Promise<Result<Config>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .insert({
@@ -95,7 +96,7 @@ export class SupabaseConfigRepository implements IConfigRepository {
   }
 
   async Update(config: Config): Promise<Result<Config>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .update({
@@ -114,10 +115,10 @@ export class SupabaseConfigRepository implements IConfigRepository {
   }
 
   async Delete(id: string): Promise<Result<void>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { error } = await client
       .from(this.table)
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id);
 
     if (error) {

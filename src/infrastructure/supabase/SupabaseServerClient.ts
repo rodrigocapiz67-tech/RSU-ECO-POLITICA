@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getEnv } from '../../config/env';
 
 /**
  * Cliente Supabase ligado a las cookies de la petición (Server Components y
@@ -10,14 +11,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export async function CreateSupabaseServerClient(): Promise<SupabaseClient> {
   const cookieStore = await cookies();
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+  const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY } = getEnv();
 
-  if (!url || !key) {
-    throw new Error('Supabase URL y key deben estar definidas en el entorno');
-  }
-
-  return createServerClient(url, key, {
+  return createServerClient(NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

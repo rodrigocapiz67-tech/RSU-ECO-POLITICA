@@ -3,24 +3,25 @@ import { GetServiceProvider } from '../../../infrastructure/DependencyInjection'
 import { GetCurrentUser } from '../../../infrastructure/auth/GetCurrentUser';
 import { CreateConfigHandler } from '../../../application/config/commands/CreateConfigHandler';
 import { CreateConfigCommand } from '../../../application/config/commands/CreateConfigCommand';
+import { withErrorHandler } from '../../../api/middleware/withErrorHandler';
 
-export async function GET() {
+export const GET = withErrorHandler(async () => {
   const sp = GetServiceProvider();
   const result = await sp.configRepository.GetAll();
 
   if (result.isFailure) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+    return NextResponse.json({ success: false, error: result.error }, { status: 400 });
   }
 
-  return NextResponse.json(result.value);
-}
+  return NextResponse.json({ success: true, data: result.value });
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async (request: NextRequest) => {
   // Solo admin puede crear configuración del sistema.
   const user = await GetCurrentUser();
   if (!user || user.rol !== 'admin') {
     return NextResponse.json(
-      { error: 'No tienes permisos para crear configuración' },
+      { success: false, error: 'No tienes permisos para crear configuración' },
       { status: 403 },
     );
   }
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   if (!body.key || !body.value) {
     return NextResponse.json(
-      { error: 'key and value are required' },
+      { success: false, error: 'key and value are required' },
       { status: 400 },
     );
   }
@@ -39,9 +40,9 @@ export async function POST(request: NextRequest) {
   const result = await handler.Handle(body);
 
   if (result.isFailure) {
-    const status = result.error?.includes('already exists') ? 409 : 500;
-    return NextResponse.json({ error: result.error }, { status });
+    const status = result.error?.includes('already exists') ? 409 : 400;
+    return NextResponse.json({ success: false, error: result.error }, { status });
   }
 
-  return NextResponse.json(result.value, { status: 201 });
-}
+  return NextResponse.json({ success: true, data: result.value }, { status: 201 });
+});

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan de Proyecto - Brigada Ambiental Universitaria</title>
+    <style>
+        /* Configuraciones para impresión en A4 (Ctrl+P) */
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #2c3e50;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            font-size: 22pt;
+            color: #27ae60;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        h2 {
+            font-size: 16pt;
+            color: #2980b9;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 5px;
+            margin-top: 25px;
+        }
+        h3 {
+            font-size: 13pt;
+            color: #34495e;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        p, li {
+            font-size: 11pt;
+            color: #34495e;
+            text-align: justify;
+        }
+        .meta-info {
+            font-size: 10pt;
+            color: #7f8c8d;
+            margin-top: 0;
+        }
+        ul {
+            margin-top: 5px;
+            padding-left: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 10px;
+            font-size: 10pt;
+        }
+        th {
+            background-color: #f7f9fa;
+            color: #2c3e50;
+            text-align: left;
+        }
+        .highlight {
+            background-color: #e8f8f5;
+            padding: 15px;
+            border-left: 4px solid #1abc9c;
+            margin: 15px 0;
+        }
+        /* Utilidad para forzar salto de página al imprimir */
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <!-- ENCABEZADO -->
+        <div class="header">
+            <h1>Plan de Proyecto de Software</h1>
+            <p class="meta-info">Plataforma Web para la Gestión de RSU</p>
+            <p class="meta-info"><strong>Proyecto:</strong> Brigada Ambiental Universitaria - Facultad de Economía</p>
+            <p class="meta-info"><strong>Desarrolladores:</strong> Estudiantes de 2do Año</p>
+        </div>
+
+        <!-- 1. RESUMEN EJECUTIVO -->
+        <h2>1. Resumen Ejecutivo</h2>
+        <p>
+            El presente proyecto consiste en el desarrollo de una Plataforma Integral Web orientada a centralizar, administrar y medir el impacto de la <strong>Responsabilidad Social Universitaria (RSU)</strong>. El sistema digitalizará la operatividad de la "Brigada Ambiental Universitaria", transformando a la Facultad de Economía en un "Eco campus", eliminando el uso de papel y automatizando el cumplimiento de normativas de salud pública.
+        </p>
+
+        <!-- 2. FUNDAMENTACIÓN -->
+        <h2>2. Fundamentación y Justificación</h2>
+        <div class="highlight">
+            <p><strong>¿Por qué crear esta plataforma?</strong></p>
+            <ul>
+                <li><strong>Ecoeficiencia Cero Papel:</strong> La gestión tradicional (impresión de afiches y listas de asistencia) genera residuos. La plataforma asegura un impacto de huella de carbono digital mínimo.</li>
+                <li><strong>Trazabilidad y Auditoría:</strong> Permite medir de forma exacta el éxito de la RSU mediante el conteo en tiempo real de asistencias y visualizaciones de material.</li>
+                <li><strong>Responsabilidad Legal y Salud:</strong> El sistema automatiza las advertencias preventivas sobre exposición a la radiación solar, cumpliendo con las directivas de protección a la salud del estudiante.</li>
+            </ul>
+        </div>
+
+        <!-- 3. OBJETIVOS Y REQUERIMIENTOS -->
+        <h2>3. Objetivos y Metas Cuantitativas (Requerimientos)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Módulo / Funcionalidad</th>
+                    <th>Meta / Lógica de Negocio</th>
+                    <th>Impacto Esperado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Gestión de Brigadistas</strong></td>
+                    <td>Administración estricta de una brigada activa de <strong>90 estudiantes</strong>.</td>
+                    <td>Control automatizado de cupos y roles específicos (Brigadista, Coordinador).</td>
+                </tr>
+                <tr>
+                    <td><strong>Gestión de Eventos (Foros)</strong></td>
+                    <td>Registro de inscripciones y verificación de asistencia real con meta de <strong>130 personas</strong>.</td>
+                    <td>Medición precisa de la participación estudiantil en capacitaciones ambientales.</td>
+                </tr>
+                <tr>
+                    <td><strong>Ecoteca (Difusión)</strong></td>
+                    <td>Distribución de afiches/infografías con un alcance verificado de <strong>500 estudiantes</strong>.</td>
+                    <td>Sensibilización masiva verificable mediante trazabilidad de vistas únicas.</td>
+                </tr>
+                <tr>
+                    <td><strong>Alertas de Radiación UV</strong></td>
+                    <td>Emisión de alertas dinámicas en la franja crítica de <strong>10:00 a.m. a 3:00 p.m.</strong></td>
+                    <td>Prevención de riesgos a la salud de la comunidad universitaria.</td>
+                </tr>
+                <tr>
+                    <td><strong>Cumplimiento Legal</strong></td>
+                    <td>Renderizado permanente del texto: <em>"La exposición prolongada a la radiación solar produce daño a la salud"</em>.</td>
+                    <td>Cumplimiento automático de la normativa de prevención pública.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- SALTO DE PÁGINA PARA IMPRESIÓN -->
+        <div class="page-break"></div>
+
+        <!-- 4. ARQUITECTURA TECNOLÓGICA -->
+        <h2>4. Arquitectura y Viabilidad Tecnológica</h2>
+        <p>El proyecto es económicamente viable (Costo $0) mediante el uso de planes gratuitos orientados a estudiantes. Técnicamente se fundamenta en un ecosistema moderno y robusto:</p>
+        <ul>
+            <li><strong>Frontend y Backend (Serverless):</strong> Next.js (App Router) + React. Elegido por su rendimiento, SEO y capacidad de alojar APIs en el mismo repositorio.</li>
+            <li><strong>Base de Datos y Auth:</strong> Supabase (PostgreSQL). Proporciona Autenticación segura y Base de Datos Relacional con RLS (Row Level Security).</li>
+            <li><strong>Arquitectura de Software:</strong> Basado en los principios de <em>Clean Architecture</em> y <em>Domain-Driven Design (DDD)</em> para separar la lógica de negocio (Casos de Uso) de la infraestructura.</li>
+            <li><strong>Hosting:</strong> Vercel (Frontend/Backend) y Supabase Cloud (BD), garantizando ecoeficiencia al escalar a cero recursos cuando no hay tráfico.</li>
+        </ul>
+
+        <!-- 5. CRONOGRAMA Y FASES DE EJECUCIÓN -->
+        <h2>5. Fases de Ejecución (Hoja de Ruta)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Fase</th>
+                    <th>Descripción de Actividades</th>
+                    <th>Entregable</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Fase 1: Estructuración DB</strong></td>
+                    <td>Modelado de tablas (profiles, asistencias, materiales, alcance_difusion). Configuración de Seguridad RLS en Supabase.</td>
+                    <td>Esquema SQL relacional funcional.</td>
+                </tr>
+                <tr>
+                    <td><strong>Fase 2: Backend y APIs</strong></td>
+                    <td>Creación del Endpoint de Alertas UV/Legal. Desarrollo de Casos de Uso para validar límites (90 brigadistas, 130 asistentes).</td>
+                    <td>APIs operativas en Next.js.</td>
+                </tr>
+                <tr>
+                    <td><strong>Fase 3: Desarrollo UI</strong></td>
+                    <td>Diseño e implementación de vistas: Dashboard UV, Catálogo de Foros, Vista de Ecoteca (Afiches) y Panel de Administración.</td>
+                    <td>Interfaces de usuario conectadas al backend.</td>
+                </tr>
+                <tr>
+                    <td><strong>Fase 4: Pruebas y Despliegue</strong></td>
+                    <td>Testing de flujos (inscripción y alcance). Despliegue en producción usando Vercel.</td>
+                    <td>URL pública funcional (MVP).</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</body>
+</html>

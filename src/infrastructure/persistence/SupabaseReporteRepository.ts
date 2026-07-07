@@ -4,7 +4,7 @@ import { CategoriaReporte } from '../../domain/enums/CategoriaReporte';
 import { PrioridadReporte } from '../../domain/enums/PrioridadReporte';
 import { EstadoReporte } from '../../domain/enums/EstadoReporte';
 import { Result } from '../../domain/common/Result';
-import { CreateServerSupabaseClient } from '../supabase/SupabaseClient';
+import { CreateSupabaseServerClient } from '../supabase/SupabaseServerClient';
 
 interface ReporteRow {
   id: string;
@@ -42,7 +42,7 @@ export class SupabaseReporteRepository implements IReporteRepository {
   }
 
   async GetById(id: string): Promise<Result<Reporte>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .select('*')
@@ -59,10 +59,11 @@ export class SupabaseReporteRepository implements IReporteRepository {
   }
 
   async GetAll(): Promise<Result<Reporte[]>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .select('*')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -73,11 +74,12 @@ export class SupabaseReporteRepository implements IReporteRepository {
   }
 
   async GetByAutor(autorId: string): Promise<Result<Reporte[]>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .select('*')
       .eq('autor_id', autorId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -90,7 +92,7 @@ export class SupabaseReporteRepository implements IReporteRepository {
   }
 
   async Create(reporte: Reporte): Promise<Result<Reporte>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .insert({
@@ -116,7 +118,7 @@ export class SupabaseReporteRepository implements IReporteRepository {
   }
 
   async Update(reporte: Reporte): Promise<Result<Reporte>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .update({

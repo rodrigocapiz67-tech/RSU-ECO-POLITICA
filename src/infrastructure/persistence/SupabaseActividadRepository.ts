@@ -1,7 +1,9 @@
 import { IActividadRepository } from '../../domain/interfaces/IActividadRepository';
 import { Actividad } from '../../domain/entities/Actividad';
 import { Result } from '../../domain/common/Result';
-import { CreateServerSupabaseClient } from '../supabase/SupabaseClient';
+import { CreateSupabaseServerClient } from '../supabase/SupabaseServerClient';
+import { CreateSupabaseAnonClient } from '../supabase/SupabaseAnonClient';
+import { unstable_cache, revalidateTag } from 'next/cache';
 
 interface ActividadRow {
   id: string;
@@ -33,7 +35,7 @@ export class SupabaseActividadRepository implements IActividadRepository {
   }
 
   async GetById(id: string): Promise<Result<Actividad>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .select('*')
@@ -50,25 +52,38 @@ export class SupabaseActividadRepository implements IActividadRepository {
   }
 
   async GetAll(): Promise<Result<Actividad[]>> {
-    const client = CreateServerSupabaseClient();
-    const { data, error } = await client
-      .from(this.table)
-      .select('*')
-      .order('fecha', { ascending: true });
+    // Definimos la función cacheada globalmente
+    const getCachedActividades = unstable_cache(
+      async () => {
+        const client = CreateSupabaseAnonClient();
+        const { data, error } = await client
+          .from(this.table)
+          .select('*')
+          .is('deleted_at', null)
+          .order('fecha', { ascending: true });
+        
+        if (error) throw new Error(error.message);
+        return data as ActividadRow[];
+      },
+      ['actividades_all'],
+      { tags: ['actividades'], revalidate: 3600 } // Cachear por 1 hora o hasta que se revalide
+    );
 
-    if (error) {
+    try {
+      const data = await getCachedActividades();
+      return Result.Success(data.map((row) => this.MapToEntity(row)));
+    } catch (error: any) {
       return Result.Failure<Actividad[]>(`Error al listar actividades: ${error.message}`);
     }
-
-    return Result.Success((data as ActividadRow[]).map((row) => this.MapToEntity(row)));
   }
 
   async GetProximas(): Promise<Result<Actividad[]>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .select('*')
       .gte('fecha', new Date().toISOString())
+      .is('deleted_at', null)
       .order('fecha', { ascending: true });
 
     if (error) {
@@ -81,7 +96,7 @@ export class SupabaseActividadRepository implements IActividadRepository {
   }
 
   async Create(actividad: Actividad): Promise<Result<Actividad>> {
-    const client = CreateServerSupabaseClient();
+    const client = await CreateSupabaseServerClient();
     const { data, error } = await client
       .from(this.table)
       .insert({
@@ -99,6 +114,9 @@ export class SupabaseActividadRepository implements IActividadRepository {
     if (error) {
       return Result.Failure<Actividad>(`Error al crear actividad: ${error.message}`);
     }
+
+    // Purgar la caché para que el próximo GetAll() traiga los datos frescos
+    revalidateTag('actividades');
 
     return Result.Success(this.MapToEntity(data as ActividadRow));
   }

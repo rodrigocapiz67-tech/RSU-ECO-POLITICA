@@ -4,28 +4,29 @@ import { GetCurrentUser } from '../../../infrastructure/auth/GetCurrentUser';
 import { CreateActividadHandler } from '../../../application/actividades/commands/CreateActividadHandler';
 import { CreateActividadCommand } from '../../../application/actividades/commands/CreateActividadCommand';
 import { GetActividadesHandler } from '../../../application/actividades/queries/GetActividadesHandler';
+import { withErrorHandler } from '../../../api/middleware/withErrorHandler';
 
-export async function GET() {
+export const GET = withErrorHandler(async () => {
   const sp = GetServiceProvider();
   const handler = new GetActividadesHandler(sp.actividadRepository);
   const result = await handler.Handle();
 
   if (result.isFailure) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+    return NextResponse.json({ success: false, error: result.error }, { status: 400 });
   }
 
-  return NextResponse.json(result.value);
-}
+  return NextResponse.json({ success: true, data: result.value });
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async (request: NextRequest) => {
   // Solo coordinadores/admin pueden crear actividades.
   const user = await GetCurrentUser();
   if (!user) {
-    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });
   }
   if (user.rol !== 'coordinador' && user.rol !== 'admin') {
     return NextResponse.json(
-      { error: 'No tienes permisos para crear actividades' },
+      { success: false, error: 'No tienes permisos para crear actividades' },
       { status: 403 },
     );
   }
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   if (!body.titulo || !body.fecha) {
     return NextResponse.json(
-      { error: 'titulo y fecha son obligatorios' },
+      { success: false, error: 'titulo y fecha son obligatorios' },
       { status: 400 },
     );
   }
@@ -53,8 +54,8 @@ export async function POST(request: NextRequest) {
   const result = await handler.Handle(command);
 
   if (result.isFailure) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
+    return NextResponse.json({ success: false, error: result.error }, { status: 400 });
   }
 
-  return NextResponse.json(result.value, { status: 201 });
-}
+  return NextResponse.json({ success: true, data: result.value }, { status: 201 });
+});

@@ -4,48 +4,52 @@ import { GetCurrentUser } from '../../../infrastructure/auth/GetCurrentUser';
 import { CreateReporteHandler } from '../../../application/reportes/commands/CreateReporteHandler';
 import { CreateReporteCommand } from '../../../application/reportes/commands/CreateReporteCommand';
 import { GetReportesHandler } from '../../../application/reportes/queries/GetReportesHandler';
+import { CreateReporteSchema } from '../../../api/validations/ReporteSchema';
+import { withErrorHandler } from '../../../api/middleware/withErrorHandler';
 
-export async function GET() {
+export const GET = withErrorHandler(async (request: NextRequest) => {
   const sp = GetServiceProvider();
   const handler = new GetReportesHandler(sp.reporteRepository);
   const result = await handler.Handle();
 
   if (result.isFailure) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+    return NextResponse.json({ success: false, error: result.error }, { status: 400 });
   }
 
-  return NextResponse.json(result.value);
-}
+  return NextResponse.json({ success: true, data: result.value });
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async (request: NextRequest) => {
   const body = await request.json();
 
-  if (!body.titulo || !body.descripcion || !body.categoria || !body.ubicacion) {
+  const parseResult = CreateReporteSchema.safeParse(body);
+  if (!parseResult.success) {
     return NextResponse.json(
-      { error: 'titulo, descripcion, categoria y ubicacion son obligatorios' },
+      { success: false, error: 'Datos inválidos', detalles: parseResult.error.format() },
       { status: 400 },
     );
   }
 
-  const esAnonimo = body.esAnonimo ?? false;
+  const validData = parseResult.data;
+  const esAnonimo = validData.esAnonimo;
 
   // Reporte identificado ⇒ requiere sesión. Reporte anónimo ⇒ sin autor.
   const user = await GetCurrentUser();
   if (!esAnonimo && !user) {
     return NextResponse.json(
-      { error: 'Debes iniciar sesión o marcar el reporte como anónimo' },
+      { success: false, error: 'Debes iniciar sesión o marcar el reporte como anónimo' },
       { status: 401 },
     );
   }
 
   const command: CreateReporteCommand = {
-    titulo: body.titulo,
-    descripcion: body.descripcion,
-    categoria: body.categoria,
-    ubicacion: body.ubicacion,
-    prioridad: body.prioridad,
+    titulo: validData.titulo,
+    descripcion: validData.descripcion,
+    categoria: validData.categoria,
+    ubicacion: validData.ubicacion,
+    prioridad: validData.prioridad,
     esAnonimo,
-    fotoUrl: body.fotoUrl,
+    fotoUrl: validData.fotoUrl,
     autorId: esAnonimo ? undefined : user?.id,
   };
 
@@ -54,8 +58,8 @@ export async function POST(request: NextRequest) {
   const result = await handler.Handle(command);
 
   if (result.isFailure) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
+    return NextResponse.json({ success: false, error: result.error }, { status: 400 });
   }
 
-  return NextResponse.json(result.value, { status: 201 });
-}
+  return NextResponse.json({ success: true, data: result.value }, { status: 201 });
+});
