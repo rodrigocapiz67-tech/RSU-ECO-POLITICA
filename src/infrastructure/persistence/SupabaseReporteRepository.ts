@@ -49,6 +49,7 @@ export class SupabaseReporteRepository implements IReporteRepository {
       .from(this.table)
       .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .single();
 
     if (error || !data) {

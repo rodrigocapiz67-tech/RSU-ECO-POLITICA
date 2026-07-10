@@ -11,32 +11,20 @@ export class InscribirUsuarioHandler {
   ) {}
 
   async Handle(command: InscribirUsuarioCommand): Promise<Result<Inscripcion>> {
-    // 1. La actividad debe existir.
+    // Validaciones básicas: actividad debe existir y no estar en el pasado
     const actividadResult = await this.actividadRepository.GetById(command.actividadId);
     if (actividadResult.isFailure) {
       return Result.Failure<Inscripcion>(actividadResult.error ?? 'Actividad no encontrada');
     }
     const actividad = actividadResult.value!;
 
-    // 2. Evitar inscripción duplicada.
-    const yaInscrito = await this.inscripcionRepository.ExisteInscripcion(
-      command.actividadId,
-      command.usuarioId,
-    );
-    if (yaInscrito.isSuccess && yaInscrito.value) {
-      return Result.Failure<Inscripcion>('El usuario ya está inscrito en esta actividad');
+    // Validar que actividad no esté en el pasado
+    if (actividad.fecha < new Date()) {
+      return Result.Failure<Inscripcion>('No puedes inscribirse a una actividad que ya ha ocurrido');
     }
 
-    // 3. Control de cupo.
-    const conteo = await this.inscripcionRepository.ContarPorActividad(command.actividadId);
-    if (conteo.isFailure) {
-      return Result.Failure<Inscripcion>(conteo.error ?? 'No se pudo verificar el cupo');
-    }
-    if (!actividad.TieneCupo(conteo.value!)) {
-      return Result.Failure<Inscripcion>('La actividad ya alcanzó su cupo máximo');
-    }
-
-    // 4. Registrar inscripción.
+    // Todas las validaciones de cupo, duplicados y conteo se hacen de forma
+    // ATÓMICA en el RPC inscribir_en_actividad() con advisory locks.
     const inscripcion = Inscripcion.Create(command.actividadId, command.usuarioId);
     return this.inscripcionRepository.Create(inscripcion);
   }

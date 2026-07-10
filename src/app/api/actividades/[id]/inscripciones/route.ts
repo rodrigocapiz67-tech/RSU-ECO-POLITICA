@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GetServiceProvider } from '../../../../../infrastructure/DependencyInjection';
 import { GetCurrentUser } from '../../../../../infrastructure/auth/GetCurrentUser';
 import { InscribirUsuarioHandler } from '../../../../../application/actividades/commands/InscribirUsuarioHandler';
-import { withRateLimit } from '../../../../../api/middleware/withRateLimit';
+import { withRateLimitDistributed } from '../../../../../api/middleware/withRateLimitDistributed';
 import { withErrorHandler } from '../../../../../api/middleware/withErrorHandler';
 
 interface Params {
@@ -33,4 +33,4 @@ async function HandlePost(_request: NextRequest, { params }: Params) {
   return NextResponse.json(result.value, { status: 201 });
 }
 
-export const POST = withErrorHandler(withRateLimit(HandlePost, { limit: 10, windowMs: 10 * 60 * 1000 }));
+export const POST = withErrorHandler(withRateLimitDistributed(HandlePost, { limit: 10, windowMs: 10 * 60 * 1000 }));

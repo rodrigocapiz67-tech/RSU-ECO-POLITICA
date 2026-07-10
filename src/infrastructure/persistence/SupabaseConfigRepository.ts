@@ -35,6 +35,7 @@ export class SupabaseConfigRepository implements IConfigRepository {
       .from(this.table)
       .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .single();
 
     if (error || !data) {
@@ -50,6 +51,7 @@ export class SupabaseConfigRepository implements IConfigRepository {
       .from(this.table)
       .select('*')
       .eq('key', key)
+      .is('deleted_at', null)
       .single();
 
     if (error || !data) {

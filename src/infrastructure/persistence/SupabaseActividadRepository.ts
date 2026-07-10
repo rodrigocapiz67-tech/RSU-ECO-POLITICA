@@ -40,6 +40,7 @@ export class SupabaseActividadRepository implements IActividadRepository {
       .from(this.table)
       .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .single();
 
     if (error || !data) {

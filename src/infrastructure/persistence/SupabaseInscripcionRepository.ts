@@ -26,21 +26,36 @@ export class SupabaseInscripcionRepository implements IInscripcionRepository {
 
   async Create(inscripcion: Inscripcion): Promise<Result<Inscripcion>> {
     const client = await CreateSupabaseServerClient();
-    const { data, error } = await client
-      .from(this.table)
-      .insert({
-        id: inscripcion.id,
-        actividad_id: inscripcion.actividadId,
-        usuario_id: inscripcion.usuarioId,
-      })
-      .select()
-      .single();
+
+    // Usar RPC con advisory lock para evitar race conditions en cupo
+    const { data, error } = await client.rpc('inscribir_en_actividad', {
+      p_actividad_id: inscripcion.actividadId,
+      p_usuario_id: inscripcion.usuarioId,
+    });
 
     if (error) {
       return Result.Failure<Inscripcion>(`Error al crear inscripción: ${error.message}`);
     }
 
-    return Result.Success(this.MapToEntity(data as InscripcionRow));
+    const response = data as { success: boolean; error?: string };
+    if (!response.success) {
+      return Result.Failure<Inscripcion>(response.error ?? 'Error desconocido al inscribirse');
+    }
+
+    // Fetch inscripción creada para retornar entity
+    const { data: inscripcionData, error: fetchError } = await client
+      .from(this.table)
+      .select('*')
+      .eq('usuario_id', inscripcion.usuarioId)
+      .eq('actividad_id', inscripcion.actividadId)
+      .is('deleted_at', null)
+      .single();
+
+    if (fetchError) {
+      return Result.Failure<Inscripcion>(`Error al recuperar inscripción creada: ${fetchError.message}`);
+    }
+
+    return Result.Success(this.MapToEntity(inscripcionData as InscripcionRow));
   }
 
   async Delete(id: string): Promise<Result<void>> {

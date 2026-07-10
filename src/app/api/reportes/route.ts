@@ -6,7 +6,7 @@ import { CreateReporteCommand } from '../../../application/reportes/commands/Cre
 import { GetReportesHandler } from '../../../application/reportes/queries/GetReportesHandler';
 import { CreateReporteSchema } from '../../../api/validations/ReporteSchema';
 import { withErrorHandler } from '../../../api/middleware/withErrorHandler';
-import { withRateLimit } from '../../../api/middleware/withRateLimit';
+import { withRateLimitDistributed } from '../../../api/middleware/withRateLimitDistributed';
 import { parsePaginationParams } from '../../../api/parsePaginationParams';
 
 export const GET = withErrorHandler(async (request: NextRequest) => {
@@ -21,7 +21,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   return NextResponse.json({ success: true, data: result.value });
 });
 
-export const POST = withErrorHandler(withRateLimit(async (request: NextRequest) => {
+export const POST = withErrorHandler(withRateLimitDistributed(async (request: NextRequest) => {
   const body = await request.json();
   const validData = CreateReporteSchema.parse(body);
   const esAnonimo = validData.esAnonimo;
