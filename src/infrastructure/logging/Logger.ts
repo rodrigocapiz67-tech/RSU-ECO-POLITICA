@@ -10,7 +10,9 @@ function serializeError(error: unknown): LogFields {
     const ownProps = Object.fromEntries(
       Object.entries(error).filter(([key]) => key !== 'message' && key !== 'stack'),
     );
-    return { errorMessage: error.message, errorName: error.name, stack: error.stack, ...ownProps };
+    const isProduction = process.env.NODE_ENV === 'production';
+    const stack = !isProduction ? error.stack : undefined;
+    return { errorMessage: error.message, errorName: error.name, ...(stack && { stack }), ...ownProps };
   }
 
   try {

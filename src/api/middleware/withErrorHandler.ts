@@ -42,6 +42,7 @@ export function withErrorHandler(handler: ApiHandler): ApiHandler {
 
       // 3. Manejar Errores de Validación (Zod) que hayan escapado
       if (error instanceof ZodError) {
+        logger.warn('Validation error', error);
         const message = 'Error de validación de formato';
         return NextResponse.json(
           {
@@ -50,7 +51,6 @@ export function withErrorHandler(handler: ApiHandler): ApiHandler {
             error: message,
             message,
             errorCode: 'VALIDATION_ERROR',
-            detalles: error.format(),
           },
           { status: 400 }
         );
