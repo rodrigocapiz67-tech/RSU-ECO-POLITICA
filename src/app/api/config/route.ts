@@ -8,6 +8,15 @@ import { withRateLimitDistributed } from '../../../api/middleware/withRateLimitD
 import { CreateConfigSchema } from '../../../api/validations/ConfigSchema';
 
 export const GET = withErrorHandler(async () => {
+  // Solo admin puede acceder a la configuración del sistema (parámetros de negocio)
+  const user = await GetCurrentUser();
+  if (!user || user.rol !== 'admin') {
+    return NextResponse.json(
+      { success: false, error: 'No tienes permisos para acceder a la configuración' },
+      { status: 403 },
+    );
+  }
+
   const sp = GetServiceProvider();
   const result = await sp.configRepository.GetAll();
 

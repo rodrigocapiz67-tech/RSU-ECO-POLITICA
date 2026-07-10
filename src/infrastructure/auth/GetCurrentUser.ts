@@ -22,15 +22,20 @@ export async function GetCurrentUser(): Promise<CurrentUser | null> {
     return null;
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('rol')
     .eq('id', user.id)
     .single();
 
+  // Si falla la query de profile, retornar null (no fallback unsafe a 'usuario')
+  if (profileError || !profile) {
+    return null;
+  }
+
   return {
     id: user.id,
     email: user.email ?? undefined,
-    rol: profile?.rol ?? 'usuario',
+    rol: profile.rol,
   };
 }

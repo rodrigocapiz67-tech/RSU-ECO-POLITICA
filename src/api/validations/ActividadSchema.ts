@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+const futureLimit = new Date();
+futureLimit.setFullYear(futureLimit.getFullYear() + 2);
+
 export const CreateActividadSchema = z.object({
   titulo: z.string()
     .min(5, 'El título debe tener al menos 5 caracteres')
@@ -10,7 +13,13 @@ export const CreateActividadSchema = z.object({
     .optional()
     .default(''),
 
-  fecha: z.iso.datetime({ message: 'La fecha debe ser un ISO 8601 válido (ej. 2026-08-01T10:00:00.000Z)' }),
+  fecha: z.coerce.date()
+    .min(new Date(), 'La actividad no puede ser en el pasado')
+    .max(futureLimit, 'La actividad debe ocurrir dentro de 2 años')
+    .refine((date) => {
+      const iso = date.toISOString();
+      return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(iso);
+    }, 'La fecha debe ser un ISO 8601 válido'),
 
   ubicacion: z.string()
     .max(200, 'La ubicación es demasiado larga')
